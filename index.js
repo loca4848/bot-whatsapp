@@ -1,6 +1,6 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
-const QRCode = require('qrcode'); // <-- añadimos librería para guardar QR como imagen
+const QRCode = require('qrcode'); // Para guardar QR como imagen
 const axios = require('axios');
 const xml2js = require('xml2js');
 
@@ -28,17 +28,19 @@ async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
     const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
-    // Mostrar QR en consola y guardar como imagen
+    // Mostrar QR en consola + guardar + link online
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
-            // Mostrar QR en consola
             qrcode.generate(qr, { small: true });
 
-            // Guardar QR como imagen
             console.log("📸 Generando QR como imagen...");
             await QRCode.toFile('qr.png', qr);
-            console.log("✅ QR guardado como qr.png — Ábrelo desde tu carpeta del bot");
+            console.log("✅ QR guardado como qr.png");
+
+            const qrLink = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+            console.log("🌐 Escanea tu QR desde aquí:");
+            console.log(qrLink);
         }
 
         if (connection === 'close') {
@@ -77,7 +79,7 @@ async function startBot() {
             const type = Object.keys(m.message)[0];
             const sender = m.key.participant || m.key.remoteJid;
 
-            // ---------- ANTI-SPAM DE STICKERS ----------
+            // Anti-spam stickers
             if (isGroup && type === 'stickerMessage') {
                 const now = Date.now();
                 if (!stickerSpamTracker[sender]) {
@@ -99,7 +101,6 @@ async function startBot() {
                     }
                 }
             }
-            // --------------------------------------------
 
             const text = (type === 'conversation' ? m.message.conversation : m.message?.extendedTextMessage?.text || '').trim();
 
@@ -175,4 +176,3 @@ ${descripcion}
 }
 
 startBot();
-
