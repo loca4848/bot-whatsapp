@@ -1,5 +1,6 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode'); // <-- añadimos librería para guardar QR como imagen
 const axios = require('axios');
 const xml2js = require('xml2js');
 
@@ -21,17 +22,25 @@ const canalYT = "https://www.youtube.com/@The.FrancoX";
 const canalID = "UCV46Pdse-OZH5WmqYHs2r-w";
 const feedURL = `https://www.youtube.com/feeds/videos.xml?channel_id=${canalID}`;
 
-// Tracker para anti-spam de stickers
 let stickerSpamTracker = {};
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
     const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
-    // Mostrar QR en consola
-    sock.ev.on('connection.update', (update) => {
+    // Mostrar QR en consola y guardar como imagen
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
-        if (qr) qrcode.generate(qr, { small: true });
+        if (qr) {
+            // Mostrar QR en consola
+            qrcode.generate(qr, { small: true });
+
+            // Guardar QR como imagen
+            console.log("📸 Generando QR como imagen...");
+            await QRCode.toFile('qr.png', qr);
+            console.log("✅ QR guardado como qr.png — Ábrelo desde tu carpeta del bot");
+        }
+
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = reason !== DisconnectReason.loggedOut;
@@ -77,7 +86,7 @@ async function startBot() {
                     const timeDiff = now - stickerSpamTracker[sender].lastTime;
                     stickerSpamTracker[sender].lastTime = now;
 
-                    if (timeDiff < 5000) { // 5 segundos entre stickers
+                    if (timeDiff < 5000) {
                         stickerSpamTracker[sender].count++;
                     } else {
                         stickerSpamTracker[sender].count = 1;
@@ -105,17 +114,14 @@ async function startBot() {
                 }
             }
 
-            // #reglas
             if (text === '#reglas') {
                 await sock.sendMessage(from, { text: reglas });
             }
 
-            // #canal
             if (text === '#canal') {
                 await sock.sendMessage(from, { text: `📺 Mi terriblee, ¿ya fuiste a ver mi canal de YouTube? ¡SUSCRÍBETE!\n👉 ${canalYT}` });
             }
 
-            // #video
             if (text === '#video') {
                 await sock.sendMessage(from, { text: '🔍 Buscando tu último video en YouTube...' });
                 try {
@@ -148,7 +154,6 @@ ${descripcion}
                 }
             }
 
-            // #bam (solo admins)
             if (text === '#bam' && isGroup) {
                 const metadata = await sock.groupMetadata(from);
                 const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
@@ -170,3 +175,4 @@ ${descripcion}
 }
 
 startBot();
+
