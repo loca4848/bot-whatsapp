@@ -1,0 +1,89 @@
+// Importar librerías
+const {
+    default: makeWASocket,
+    useMultiFileAuthState,
+    DisconnectReason
+} = require("@whiskeysockets/baileys");
+const P = require("pino");
+const fs = require("fs");
+const { exec } = require("child_process");
+
+// Control de stickers enviados por usuario
+let stickerCount = {};
+
+async function startBot() {
+    const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+    const sock = makeWASocket({
+        logger: P({ level: "silent" }),
+        printQRInTerminal: true,
+        auth: state
+    });
+
+    // Evento de conexión
+    sock.ev.on("connection.update", (update) => {
+        const { connection, lastDisconnect } = update;
+        if (connection === "close") {
+            const shouldReconnect =
+                lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (shouldReconnect) {
+                startBot();
+            }
+        } else if (connection === "open") {
+            console.log("✅ Bot conectado");
+        }
+    });
+
+    // Guardar credenciales
+    sock.ev.on("creds.update", saveCreds);
+
+    // Manejo de mensajes
+    sock.ev.on("messages.upsert", async (m) => {
+        const msg = m.messages[0];
+        if (!msg.message) return;
+
+        const from = msg.key.remoteJid;
+        const isGroup = from.endsWith("@g.us");
+        const sender = msg.key.participant || msg.key.remoteJid;
+        const isAdmin = isGroup
+            ? (await sock.groupMetadata(from)).participants.find(
+                  (p) => p.id === sender && p.admin
+              )
+            : false;
+
+        // Mensaje de bienvenida
+        if (msg.messageStubType === 27 && isGroup) {
+            const participant = msg.messageStubParameters[0];
+            const mentionTag = `@${participant.split("@")[0]}`;
+            await sock.sendMessage(from, {
+                text: `${mentionTag} mi terriblee te estábamos esperando!`,
+                mentions: [participant]
+            });
+            await sock.sendMessage(from, { text: "📜 *REGLAS DEL GRUPO:*\n1. No spam\n2. No links\n3. Respeto ante todo" });
+        }
+
+        // Anti-spam de stickers (máx. 2 seguidos)
+        if (msg.message.stickerMessage) {
+            if (!stickerCount[sender]) {
+                stickerCount[sender] = 1;
+            } else {
+                stickerCount[sender]++;
+            }
+
+            if (!isAdmin && stickerCount[sender] > 2) {
+                try {
+                    await sock.sendMessage(from, { delete: msg.key });
+                    console.log(`🗑 Sticker extra eliminado de ${sender}`);
+                } catch (err) {
+                    console.log("❌ Error eliminando sticker:", err);
+                }
+            }
+
+            // Reset del contador después de 10s sin stickers
+            setTimeout(() => {
+                stickerCount[sender] = 0;
+            }, 10000);
+        }
+    });
+}
+
+startBot();
