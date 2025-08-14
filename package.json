@@ -1,16 +1,4 @@
 {
-  "name": "bot-franco",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "engines": {
-    "node": "20.x"
-  },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -24,5 +12,9 @@
     "xml2js": "^0.6.2",
     "yt-search": "^2.13.1",
     "ytdl-core": "^4.11.5"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
+
