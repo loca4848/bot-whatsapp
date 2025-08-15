@@ -43,7 +43,7 @@ app.get('/', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`));
+app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -59,7 +59,7 @@ async function startBot() {
 
             // Generar QR como Data URL para web
             qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`);
+            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
         }
 
         if (connection === 'close') {
