@@ -1,0 +1,5 @@
+@echo off
+REM ===== Encender Bot en Railway =====
+cd /d "C:\Users\USER\Documents\bot franco"
+echo Iniciando bot en Railway...
+railway up
