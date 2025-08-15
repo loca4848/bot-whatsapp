@@ -10,6 +10,24 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
 let qrCodeData = ''; // Guardamos el QR para la página
 
+// Reglas del grupo
+const reglas = `
+🚫 No spam ni stickers molestos.  
+🚫 Links solo por privado.  
+🚫 Nada de gore ni nopor.
+📸 Mandar fotos o videos para UNA VEZ.
+
+❌ Romper reglas = ELIMINACIÓN automáticamatica.
+
+🚀Disfruta del grupo terriblee🚀
+`;
+
+const canalYT = "https://www.youtube.com/@The.FrancoX";
+const canalID = "UCV46Pdse-OZH5WmqYHs2r-w";
+const feedURL = `https://www.youtube.com/feeds/videos.xml?channel_id=${canalID}`;
+
+let stickerSpamTracker = {};
+
 // Servir QR en la ruta /qr
 app.get('/qr', (req, res) => {
     if (!qrCodeData) return res.send('QR aún no generado...');
@@ -24,27 +42,8 @@ app.get('/', (req, res) => {
     res.redirect('/qr');
 });
 
-app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
-
-const reglas = `..…🎮REGLAS DEL GRUPO 🎮….
-
-✅ Respeto ante todo.  
-✅ Sé activo y aporta. 
-❓ ¿Dudas? Pregunta, aquí nos ayudamos.  
-🚫 No spam ni stickers molestos.  
-🚫 Links solo por privado.  
-🚫 Nada de gore ni nopor.
-📸 Mandar fotos o videos para UNA VEZ.
-
-❌ Romper reglas = ELIMINACIÓN automáticamatica.
-
-🚀Disfruta del grupo terriblee🚀`;
-
-const canalYT = "https://www.youtube.com/@The.FrancoX";
-const canalID = "UCV46Pdse-OZH5WmqYHs2r-w";
-const feedURL = `https://www.youtube.com/feeds/videos.xml?channel_id=${canalID}`;
-
-let stickerSpamTracker = {};
+// Iniciar servidor
+app.listen(PORT, () => console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -60,7 +59,7 @@ async function startBot() {
 
             // Generar QR como Data URL para web
             qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
+            console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`);
         }
 
         if (connection === 'close') {
