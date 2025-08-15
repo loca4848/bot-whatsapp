@@ -1,13 +1,12 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const qrcodeTerminal = require('qrcode-terminal');
-const qrcode = require('qrcode');
 const express = require('express');
 const axios = require('axios');
 const xml2js = require('xml2js');
-const schedule = require('node-schedule'); // para horarios automáticos
+const schedule = require('node-schedule');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
+const PORT = process.env.PORT || 3000;
 let qrCodeData = ''; // Guardamos el QR para la página
 
 // Reglas del grupo
@@ -17,7 +16,7 @@ const reglas = `
 🚫 Nada de gore ni nopor.
 📸 Mandar fotos o videos para UNA VEZ.
 
-❌ Romper reglas = ELIMINACIÓN automáticamatica.
+❌ Romper reglas = ELIMINACIÓN automática.
 
 🚀Disfruta del grupo terriblee🚀
 `;
@@ -38,16 +37,14 @@ app.get('/qr', (req, res) => {
 });
 
 // Redirigir la raíz / al QR automáticamente
-app.get('/', (req, res) => {
-    res.redirect('/qr');
-});
+app.get('/', (req, res) => res.redirect('/qr'));
 
 // Iniciar servidor
-app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
+app.listen(PORT, () => console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`));
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
-    const sock = makeWASocket({ auth: state, printQRInTerminal: false }); // terminal QR manejado manualmente
+    const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
     // --- Conexión y QR ---
     sock.ev.on('connection.update', async (update) => {
@@ -57,9 +54,11 @@ async function startBot() {
             // Mostrar QR en terminal
             qrcodeTerminal.generate(qr, { small: true });
 
-            // Generar QR como Data URL para web
-            qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
+            // Generar QR público usando api.qrserver.com
+            const encodedQR = encodeURIComponent(qr);
+            qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedQR}`;
+
+            console.log(`🌐 Escanea tu QR desde aquí: ${qrCodeData}`);
         }
 
         if (connection === 'close') {
@@ -88,7 +87,7 @@ async function startBot() {
     });
 
     // --- Mensajes ---
-    let grupoActual = ''; // Guardar el ID del grupo actual
+    let grupoActual = '';
 
     sock.ev.on('messages.upsert', async (msg) => {
         try {
@@ -101,7 +100,6 @@ async function startBot() {
             const text = (type === 'conversation' ? m.message.conversation : m.message?.extendedTextMessage?.text || '').trim();
             const sender = m.key.participant || m.key.remoteJid;
 
-            // Guardamos el grupo actual para horarios
             if (isGroup && !grupoActual) grupoActual = from;
 
             // Anti-links
@@ -185,28 +183,25 @@ ${descripcion}
     });
 
     // --- HORARIOS AUTOMÁTICOS ---
-    // Activar chat a las 13:00
     schedule.scheduleJob('0 13 * * *', async () => {
         if (!grupoActual) return;
         try {
-            await sock.groupSettingUpdate(grupoActual, 'not_announcement'); // permite mensajes de todos
+            await sock.groupSettingUpdate(grupoActual, 'not_announcement');
             console.log('💬 Chat activado a las 13:00');
         } catch (err) {
             console.error('Error al activar chat:', err);
         }
     });
 
-    // Desactivar chat a las 00:30
     schedule.scheduleJob('30 0 * * *', async () => {
         if (!grupoActual) return;
         try {
-            await sock.groupSettingUpdate(grupoActual, 'announcement'); // solo admins
+            await sock.groupSettingUpdate(grupoActual, 'announcement');
             console.log('🔒 Chat desactivado a las 00:30');
         } catch (err) {
             console.error('Error al desactivar chat:', err);
         }
     });
-
 }
 
-startBot(); // llamada para iniciar el bot
+startBot();
