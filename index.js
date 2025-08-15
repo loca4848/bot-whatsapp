@@ -29,20 +29,14 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-    res.send('Bot activo 🚀');
-});
-
-app.listen(port, () => {
-    console.log(`Servidor escuchando en el puerto ${port}`);
-});
+app.get('/', (req, res) => res.send('Bot activo 🚀'));
+app.listen(port, () => console.log(`Servidor escuchando en el puerto ${port}`));
 // --- FIN: Servidor Express ---
 
 // --- Configuración de horario ---
-const HORA_INICIO = 13;  // 1 PM
+const HORA_INICIO = 13; // 1 PM
 const MINUTO_INICIO = 0;
-
-const HORA_FIN = 0;      // 12 AM
+const HORA_FIN = 0; // 12 AM
 const MINUTO_FIN = 30;
 
 function dentroDelHorario() {
@@ -63,7 +57,13 @@ async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
     const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
-    // Mostrar QR en consola + guardar + link online
+    // Reconexión automática con delay para no sobrecargar Railway
+    async function reconnect() {
+        console.log("⏳ Reconectando en 5 segundos...");
+        await new Promise(res => setTimeout(res, 5000));
+        startBot();
+    }
+
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
@@ -71,7 +71,6 @@ async function startBot() {
             await QRCode.toFile('qr.png', qr);
             console.log("✅ QR guardado como qr.png");
 
-            // --- Link online para escanear el QR ---
             const qrLink = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
             console.log("🌐 Abre este link en otra pestaña para escanear el QR:");
             console.log(qrLink);
@@ -80,8 +79,8 @@ async function startBot() {
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = reason !== DisconnectReason.loggedOut;
-            console.log("⚠ Conexión cerrada. Reconectando...");
-            if (shouldReconnect) startBot();
+            console.log("⚠ Conexión cerrada.");
+            if (shouldReconnect) reconnect();
         }
     });
 
@@ -98,9 +97,7 @@ async function startBot() {
                 await sock.sendMessage(m.id, { text: `Mi terriblee ${nombre}, te estábamos esperando.. 😈¡Para la locura!😈` });
                 await sock.sendMessage(m.id, { text: reglas });
             }
-        } catch (e) {
-            console.error("Error en bienvenida:", e);
-        }
+        } catch (e) { console.error("Error en bienvenida:", e); }
     });
 
     // Mensajes
@@ -112,23 +109,17 @@ async function startBot() {
 
             const from = m.key.remoteJid;
             const isGroup = from.endsWith('@g.us');
-            const type = Object.keys(m.message)[0];
             const sender = m.key.participant || m.key.remoteJid;
 
             // Anti-spam stickers
+            const type = Object.keys(m.message)[0];
             if (isGroup && type === 'stickerMessage') {
                 const now = Date.now();
-                if (!stickerSpamTracker[sender]) {
-                    stickerSpamTracker[sender] = { count: 1, lastTime: now };
-                } else {
-                    const timeDiff = now - stickerSpamTracker[sender].lastTime;
+                if (!stickerSpamTracker[sender]) stickerSpamTracker[sender] = { count: 1, lastTime: now };
+                else {
+                    const diff = now - stickerSpamTracker[sender].lastTime;
                     stickerSpamTracker[sender].lastTime = now;
-
-                    if (timeDiff < 5000) {
-                        stickerSpamTracker[sender].count++;
-                    } else {
-                        stickerSpamTracker[sender].count = 1;
-                    }
+                    stickerSpamTracker[sender].count = (diff < 5000) ? stickerSpamTracker[sender].count + 1 : 1;
 
                     if (stickerSpamTracker[sender].count > 2) {
                         await sock.sendMessage(from, { delete: m.key });
@@ -138,7 +129,13 @@ async function startBot() {
                 }
             }
 
-            const text = (type === 'conversation' ? m.message.conversation : m.message?.extendedTextMessage?.text || '').trim();
+            // Extraer texto de cualquier mensaje
+            let text = '';
+            if (m.message.conversation) text = m.message.conversation;
+            else if (m.message.extendedTextMessage?.text) text = m.message.extendedTextMessage.text;
+            else if (m.message.imageMessage?.caption) text = m.message.imageMessage.caption;
+            else if (m.message.videoMessage?.caption) text = m.message.videoMessage.caption;
+            text = text?.trim().toLowerCase();
 
             // Anti-links
             if (isGroup && text.match(/https?:\/\/\S+/gi)) {
@@ -151,10 +148,10 @@ async function startBot() {
                 }
             }
 
+            // Comandos
             if (text === '#reglas') await sock.sendMessage(from, { text: reglas });
-            if (text === '#canal') await sock.sendMessage(from, { text: `📺 Mi terriblee, ¿ya fuiste a ver mi canal de YouTube? ¡SUSCRÍBETE!\n👉 ${canalYT}` });
-
-            if (text === '#video') {
+            else if (text === '#canal') await sock.sendMessage(from, { text: `📺 Mi terriblee, ¿ya fuiste a ver mi canal de YouTube? ¡SUSCRÍBETE!\n👉 ${canalYT}` });
+            else if (text === '#video') {
                 await sock.sendMessage(from, { text: '🔍 Buscando tu último video en YouTube...' });
                 try {
                     const { data } = await axios.get(feedURL);
@@ -176,30 +173,23 @@ ${descripcion}
 📺 Míralo aquí: ${link}`.trim();
 
                     await sock.sendMessage(from, { image: { url: thumbnail }, caption: mensaje });
-
                 } catch (error) {
                     console.error(error);
                     await sock.sendMessage(from, { text: '❌ No se pudo obtener el último video de tu canal.' });
                 }
             }
 
-            if (text === '#bam' && isGroup) {
+            else if (text === '#bam' && isGroup) {
                 const metadata = await sock.groupMetadata(from);
                 const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
                 if (!isAdmin) return;
-
                 if (m.message?.extendedTextMessage?.contextInfo?.participant) {
                     const target = m.message.extendedTextMessage.contextInfo.participant;
                     await sock.groupParticipantsUpdate(from, [target], 'remove');
-                    await sock.sendMessage(from, {
-                        text: `🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.`,
-                        mentions: [target]
-                    });
+                    await sock.sendMessage(from, { text: `🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.`, mentions: [target] });
                 }
             }
-        } catch (err) {
-            console.error("Error procesando mensaje:", err);
-        }
+        } catch (err) { console.error("Error procesando mensaje:", err); }
     });
 }
 
