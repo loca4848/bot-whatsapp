@@ -10,21 +10,15 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
 let qrCodeData = ''; // Guardamos el QR para la página
 
-// Página para mostrar el QR en formato imagen
+// Página principal (opcional)
+app.get('/', (req, res) => {
+    res.send('<h1>Bot activo. Escanea el QR en <a href="/qr">/qr</a></h1>');
+});
+
+// Página del QR
 app.get('/qr', (req, res) => {
     if (!qrCodeData) return res.send('QR aún no generado...');
-    res.send(`
-        <html>
-        <head>
-            <title>QR para WhatsApp</title>
-        </head>
-        <body style="text-align:center; font-family:sans-serif;">
-            <h1>Escanea este QR con WhatsApp</h1>
-            <img src="${qrCodeData}" alt="QR WhatsApp" style="width:300px; height:300px;" />
-            <p>Abre WhatsApp y escanea este código para iniciar sesión con el bot.</p>
-        </body>
-        </html>
-    `);
+    res.send(`<h1>Escanea el QR para WhatsApp</h1><img src="${qrCodeData}" />`);
 });
 
 app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
@@ -105,6 +99,7 @@ async function startBot() {
             const text = (type === 'conversation' ? m.message.conversation : m.message?.extendedTextMessage?.text || '').trim();
             const sender = m.key.participant || m.key.remoteJid;
 
+            // Guardamos el grupo actual para horarios
             if (isGroup && !grupoActual) grupoActual = from;
 
             // Anti-links
@@ -188,6 +183,7 @@ ${descripcion}
     });
 
     // --- HORARIOS AUTOMÁTICOS ---
+    // Activar chat a las 13:00
     schedule.scheduleJob('0 13 * * *', async () => {
         if (!grupoActual) return;
         try {
@@ -198,6 +194,7 @@ ${descripcion}
         }
     });
 
+    // Desactivar chat a las 00:30
     schedule.scheduleJob('30 0 * * *', async () => {
         if (!grupoActual) return;
         try {
@@ -207,6 +204,7 @@ ${descripcion}
             console.error('Error al desactivar chat:', err);
         }
     });
+
 }
 
-startBot(); // iniciar bot
+startBot(); // llamada para iniciar el bot
