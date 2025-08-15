@@ -47,6 +47,47 @@ app.get('/', (req, res) => res.redirect('/qr'));
 // Iniciar servidor
 app.listen(PORT, () => console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`));
 
+// --- Endpoint de healthcheck ---
+app.get('/health', (req, res) => {
+    res.send('OK');
+});
+
+// --- Función para auto-ping ---
+function autoPing() {
+    const url = `http://localhost:${PORT}/health`; // En local
+    const urlProd = process.env.RAILWAY_URL || url; // En Railway usarías la URL real
+
+    axios.get(urlProd + '/health')
+        .then(() => console.log("✅ Auto-ping enviado"))
+        .catch(err => console.error("❌ Error en auto-ping:", err.message));
+}
+
+// --- Pings programados ---
+// 12:50 -> 10 min antes de abrir chat
+schedule.scheduleJob('50 12 * * *', () => {
+    console.log("⚡ Enviando auto-ping antes de abrir chat...");
+    autoPing();
+});
+
+// 13:10 -> 10 min después de abrir chat
+schedule.scheduleJob('10 13 * * *', () => {
+    console.log("⚡ Enviando auto-ping después de abrir chat...");
+    autoPing();
+});
+
+// 00:20 -> 10 min antes de cerrar chat
+schedule.scheduleJob('20 0 * * *', () => {
+    console.log("⚡ Enviando auto-ping antes de cerrar chat...");
+    autoPing();
+});
+
+// 00:40 -> 10 min después de cerrar chat
+schedule.scheduleJob('40 0 * * *', () => {
+    console.log("⚡ Enviando auto-ping después de cerrar chat...");
+    autoPing();
+});
+
+
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
     const sock = makeWASocket({ auth: state, printQRInTerminal: false });
