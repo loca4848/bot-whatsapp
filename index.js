@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
     res.send(`<h1>Escanea el QR para WhatsApp</h1><img src="${qrCodeData}" />`);
 });
 
-app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`);
+app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`));
 
 const reglas = `..…🎮REGLAS DEL GRUPO 🎮….
 
