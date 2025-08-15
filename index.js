@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
-.  
+  
 🚫 No spam ni stickers molestos.  
 🚫 Links solo por privado.  
 🚫 Nada de gore ni nopor.
