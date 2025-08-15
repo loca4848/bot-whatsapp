@@ -49,7 +49,14 @@ async function startBot() {
     // QR y reconexión
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
-        if (qr) qrcode.generate(qr, { small: true });
+        if (qr) {
+            // Muestra el QR en la terminal
+            qrcode.generate(qr, { small: true });
+
+            // Genera un link para abrir en otra pestaña
+            const qrLink = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qr)}&size=200x200`;
+            console.log("🔗 Escanea el QR desde este enlace: " + qrLink);
+        }
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = reason !== DisconnectReason.loggedOut;
