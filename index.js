@@ -68,7 +68,7 @@ async function startBot() {
                 const user = m.participants[0];
                 const info = await sock.onWhatsApp(user);
                 const nombre = info?.[0]?.notify || user.split('@')[0];
-                await sock.sendMessage(m.id, { text: `😈 Mi terriblee ${nombre}, te estábamos esperandooo... ¡la locura! 😈` });
+                await sock.sendMessage(m.id, { text: ` Mi terriblee ${nombre}, te estábamos esperandooo.. 😈¡Para la locura!😈` });
                 await sock.sendMessage(m.id, { text: reglas });
             }
         } catch (e) {
@@ -102,7 +102,7 @@ async function startBot() {
                 const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
                 if (!isAdmin) {
                     await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "🚫 Spam" });
+                    await sock.sendMessage(from, { text: "🚫 Se eliminó un link por incumplir las reglas.🚫 " });
                     return;
                 }
             }
