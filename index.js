@@ -10,10 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
 let qrCodeData = ''; // Guardamos el QR para la página
 
-a// Servir QR en la ruta /qr
-app.get('/qr', (req, res) => {
-    if (!qrCodeData) return res.send('QR aún no generado...');
-   // Servir QR en la ruta /qr
+// Servir QR en la ruta /qr
 app.get('/qr', (req, res) => {
     if (!qrCodeData) return res.send('QR aún no generado...');
     res.send(`
@@ -28,7 +25,12 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
-  
+
+const reglas = `..…🎮REGLAS DEL GRUPO 🎮….
+
+✅ Respeto ante todo.  
+✅ Sé activo y aporta. 
+❓ ¿Dudas? Pregunta, aquí nos ayudamos.  
 🚫 No spam ni stickers molestos.  
 🚫 Links solo por privado.  
 🚫 Nada de gore ni nopor.
@@ -58,7 +60,7 @@ async function startBot() {
 
             // Generar QR como Data URL para web
             qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`);
+            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
         }
 
         if (connection === 'close') {
