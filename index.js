@@ -10,24 +10,25 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
 let qrCodeData = ''; // Guardamos el QR para la página
 
-// Página principal (opcional)
-app.get('/', (req, res) => {
-    res.send('<h1>Bot activo. Escanea el QR en <a href="/qr">/qr</a></h1>');
-});
-
-// Página del QR
+a// Servir QR en la ruta /qr
 app.get('/qr', (req, res) => {
     if (!qrCodeData) return res.send('QR aún no generado...');
-    res.send(`<h1>Escanea el QR para WhatsApp</h1><img src="${qrCodeData}" />`);
+   // Servir QR en la ruta /qr
+app.get('/qr', (req, res) => {
+    if (!qrCodeData) return res.send('QR aún no generado...');
+    res.send(`
+        <h1>Escanea el QR para WhatsApp</h1>
+        <img src="${qrCodeData}" />
+    `);
+});
+
+// Redirigir la raíz / al QR automáticamente
+app.get('/', (req, res) => {
+    res.redirect('/qr');
 });
 
 app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
-
-const reglas = `..…🎮REGLAS DEL GRUPO 🎮….
-
-✅ Respeto ante todo.  
-✅ Sé activo y aporta. 
-❓ ¿Dudas? Pregunta, aquí nos ayudamos.  
+.  
 🚫 No spam ni stickers molestos.  
 🚫 Links solo por privado.  
 🚫 Nada de gore ni nopor.
@@ -57,7 +58,7 @@ async function startBot() {
 
             // Generar QR como Data URL para web
             qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
+            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`);
         }
 
         if (connection === 'close') {
