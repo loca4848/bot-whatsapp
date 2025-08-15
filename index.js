@@ -11,12 +11,17 @@ let qrCodeData = ''; // Guardamos el QR para la página
 
 // Reglas del grupo
 const reglas = `
+..…🎮REGLAS DEL GRUPO 🎮….
+
+✅ Respeto ante todo.  
+✅ Sé activo y aporta. 
+❓ ¿Dudas? Pregunta, aquí nos ayudamos.  
 🚫 No spam ni stickers molestos.  
 🚫 Links solo por privado.  
 🚫 Nada de gore ni nopor.
 📸 Mandar fotos o videos para UNA VEZ.
 
-❌ Romper reglas = ELIMINACIÓN automática.
+❌ Romper reglas = ELIMINACIÓN automáticamatica.
 
 🚀Disfruta del grupo terriblee🚀
 `;
@@ -78,7 +83,7 @@ async function startBot() {
                 const user = m.participants[0];
                 const info = await sock.onWhatsApp(user);
                 const nombre = info?.[0]?.notify || user.split('@')[0];
-                await sock.sendMessage(m.id, { text: `😈 Mi terriblee ${nombre}, te estábamos esperandooo... ¡la locura! 😈` });
+                await sock.sendMessage(m.id, { text: ` Mi terriblee ${nombre}, te estábamos esperandoo.. 😈 ¡Para la locura! 😈` });
                 await sock.sendMessage(m.id, { text: reglas });
             }
         } catch (e) {
@@ -108,7 +113,7 @@ async function startBot() {
                 const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
                 if (!isAdmin) {
                     await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "🚫 Spam" });
+                    await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
                     return;
                 }
             }
