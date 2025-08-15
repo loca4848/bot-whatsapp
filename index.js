@@ -70,6 +70,11 @@ async function startBot() {
             qrcode.generate(qr, { small: true });
             await QRCode.toFile('qr.png', qr);
             console.log("✅ QR guardado como qr.png");
+
+            // --- Link online para escanear el QR ---
+            const qrLink = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+            console.log("🌐 Abre este link en otra pestaña para escanear el QR:");
+            console.log(qrLink);
         }
 
         if (connection === 'close') {
@@ -84,7 +89,7 @@ async function startBot() {
 
     // Bienvenida
     sock.ev.on('group-participants.update', async (m) => {
-        if (!dentroDelHorario()) return; // Solo en horario activo
+        if (!dentroDelHorario()) return;
         try {
             if (m.action === 'add') {
                 const user = m.participants[0];
@@ -100,7 +105,7 @@ async function startBot() {
 
     // Mensajes
     sock.ev.on('messages.upsert', async (msg) => {
-        if (!dentroDelHorario()) return; // Solo procesa mensajes en horario activo
+        if (!dentroDelHorario()) return;
         try {
             const m = msg.messages[0];
             if (!m.message || m.key.fromMe) return;
@@ -200,4 +205,3 @@ ${descripcion}
 
 // --- Iniciar bot ---
 startBot();
-
