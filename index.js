@@ -10,12 +10,24 @@ const app = express();
 const PORT = process.env.PORT || 3000; // Railway asigna automáticamente el puerto
 let qrCodeData = ''; // Guardamos el QR para la página
 
-app.get('/', (req, res) => {
+// Página para mostrar el QR en formato imagen
+app.get('/qr', (req, res) => {
     if (!qrCodeData) return res.send('QR aún no generado...');
-    res.send(`<h1>Escanea el QR para WhatsApp</h1><img src="${qrCodeData}" />`);
+    res.send(`
+        <html>
+        <head>
+            <title>QR para WhatsApp</title>
+        </head>
+        <body style="text-align:center; font-family:sans-serif;">
+            <h1>Escanea este QR con WhatsApp</h1>
+            <img src="${qrCodeData}" alt="QR WhatsApp" style="width:300px; height:300px;" />
+            <p>Abre WhatsApp y escanea este código para iniciar sesión con el bot.</p>
+        </body>
+        </html>
+    `);
 });
 
-app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`));
+app.listen(PORT, () => console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`));
 
 const reglas = `..…🎮REGLAS DEL GRUPO 🎮….
 
@@ -51,7 +63,7 @@ async function startBot() {
 
             // Generar QR como Data URL para web
             qrCodeData = await qrcode.toDataURL(qr);
-            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/`);
+            console.log(`🔗 QR listo en web: https://bot-whatsapp.up.railway.app/qr`);
         }
 
         if (connection === 'close') {
@@ -93,7 +105,6 @@ async function startBot() {
             const text = (type === 'conversation' ? m.message.conversation : m.message?.extendedTextMessage?.text || '').trim();
             const sender = m.key.participant || m.key.remoteJid;
 
-            // Guardamos el grupo actual para horarios
             if (isGroup && !grupoActual) grupoActual = from;
 
             // Anti-links
@@ -177,7 +188,6 @@ ${descripcion}
     });
 
     // --- HORARIOS AUTOMÁTICOS ---
-    // Activar chat a las 13:00
     schedule.scheduleJob('0 13 * * *', async () => {
         if (!grupoActual) return;
         try {
@@ -188,7 +198,6 @@ ${descripcion}
         }
     });
 
-    // Desactivar chat a las 00:30
     schedule.scheduleJob('30 0 * * *', async () => {
         if (!grupoActual) return;
         try {
@@ -198,7 +207,6 @@ ${descripcion}
             console.error('Error al desactivar chat:', err);
         }
     });
-
 }
 
-startBot(); // llamada para iniciar el bot
+startBot(); // iniciar bot
