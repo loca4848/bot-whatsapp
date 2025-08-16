@@ -28,7 +28,7 @@ const reglas = `
 
 const canalYT = "https://www.youtube.com/@The.FrancoX";
 const canalID = "UCV46Pdse-OZH5WmqYHs2r-w";
-const feedURL = https://www.youtube.com/feeds/videos.xml?channel_id=${canalID};
+const feedURL = `https://www.youtube.com/feeds/videos.xml?channel_id=${canalID}`;
 
 let stickerSpamTracker = {};
 
@@ -45,7 +45,7 @@ app.get('/qr', (req, res) => {
 app.get('/', (req, res) => res.redirect('/qr'));
 
 // Iniciar servidor
-app.listen(PORT, () => console.log(🔗 QR listo en web: http://localhost:${PORT}/qr));
+app.listen(PORT, () => console.log(`🔗 QR listo en web: http://localhost:${PORT}/qr`));
 
 // --- Endpoint de healthcheck ---
 app.get('/health', (req, res) => {
@@ -54,7 +54,7 @@ app.get('/health', (req, res) => {
 
 // --- Función para auto-ping ---
 function autoPing() {
-    const url = http://localhost:${PORT}/health; // En local
+    const url = `http://localhost:${PORT}/health`; // En local
     const urlProd = process.env.RAILWAY_URL || url; // En Railway usarías la URL real
 
     axios.get(urlProd + '/health')
@@ -63,30 +63,10 @@ function autoPing() {
 }
 
 // --- Pings programados ---
-// 12:50 -> 10 min antes de abrir chat
-schedule.scheduleJob('50 12 * * *', () => {
-    console.log("⚡ Enviando auto-ping antes de abrir chat...");
-    autoPing();
-});
-
-// 13:10 -> 10 min después de abrir chat
-schedule.scheduleJob('10 13 * * *', () => {
-    console.log("⚡ Enviando auto-ping después de abrir chat...");
-    autoPing();
-});
-
-// 00:20 -> 10 min antes de cerrar chat
-schedule.scheduleJob('20 0 * * *', () => {
-    console.log("⚡ Enviando auto-ping antes de cerrar chat...");
-    autoPing();
-});
-
-// 00:40 -> 10 min después de cerrar chat
-schedule.scheduleJob('40 0 * * *', () => {
-    console.log("⚡ Enviando auto-ping después de cerrar chat...");
-    autoPing();
-});
-
+schedule.scheduleJob('50 12 * * *', () => { autoPing(); console.log("⚡ Enviando auto-ping antes de abrir chat..."); });
+schedule.scheduleJob('10 13 * * *', () => { autoPing(); console.log("⚡ Enviando auto-ping después de abrir chat..."); });
+schedule.scheduleJob('20 0 * * *', () => { autoPing(); console.log("⚡ Enviando auto-ping antes de cerrar chat..."); });
+schedule.scheduleJob('40 0 * * *', () => { autoPing(); console.log("⚡ Enviando auto-ping después de cerrar chat..."); });
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -97,14 +77,10 @@ async function startBot() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            // Mostrar QR en terminal
             qrcodeTerminal.generate(qr, { small: true });
-
-            // Generar QR público usando api.qrserver.com
             const encodedQR = encodeURIComponent(qr);
-            qrCodeData = https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedQR};
-
-            console.log(🌐 Escanea tu QR desde aquí: ${qrCodeData});
+            qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedQR}`;
+            console.log(`🌐 Escanea tu QR desde aquí: ${qrCodeData}`);
         }
 
         if (connection === 'close') {
@@ -124,7 +100,7 @@ async function startBot() {
                 const user = m.participants[0];
                 const info = await sock.onWhatsApp(user);
                 const nombre = info?.[0]?.notify || user.split('@')[0];
-                await sock.sendMessage(m.id, { text: ` Mi terriblee ${nombre}, te estábamos esperandoo.. 😈 ¡Para la locura! 😈` });
+                await sock.sendMessage(m.id, { text: `Mi terriblee ${nombre}, te estábamos esperandoo.. 😈 ¡Para la locura! 😈` });
                 await sock.sendMessage(m.id, { text: reglas });
             }
         } catch (e) {
@@ -165,7 +141,7 @@ async function startBot() {
                 stickerSpamTracker[sender] = count + 1;
 
                 if (stickerSpamTracker[sender] > 2) {
-                    await sock.sendMessage(from, { delete: m.key });
+                    await sock.sendMessage(from, { delete: { remoteJid: from, fromMe: false, id: m.key.id, participant: sender } });
                     await sock.sendMessage(from, { text: "🚫 No se pueden enviar más de 2 stickers seguidos" });
                     stickerSpamTracker[sender] = 0;
                 }
@@ -175,7 +151,7 @@ async function startBot() {
 
             // Comandos
             if (text === '#reglas') await sock.sendMessage(from, { text: reglas });
-            if (text === '#canal') await sock.sendMessage(from, { text: 📺 Mi terriblee, ¿ya fuiste a ver mi canal de YouTube? ¡SUSCRÍBETE!\n👉 ${canalYT} });
+            if (text === '#canal') await sock.sendMessage(from, { text: `📺 Mi terriblee, ¿ya fuiste a ver mi canal de YouTube? ¡SUSCRÍBETE!\n👉 ${canalYT}` });
 
             if (text === '#video') {
                 await sock.sendMessage(from, { text: '🔍 Buscando tu último video en YouTube...' });
@@ -217,7 +193,7 @@ ${descripcion}
                     const target = m.message.extendedTextMessage.contextInfo.participant;
                     await sock.groupParticipantsUpdate(from, [target], 'remove');
                     await sock.sendMessage(from, {
-                        text: 🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.,
+                        text: `🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.`,
                         mentions: [target]
                     });
                 }
