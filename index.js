@@ -149,29 +149,46 @@ async function startBot() {
             if (isGroup && !grupoActual) grupoActual = from;
 
             // Anti-links
-            if (isGroup && text.match(/https?:\/\/\S+/gi)) {
-                const metadata = await sock.groupMetadata(from);
-                const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
-                if (!isAdmin) {
-                    await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
-                    return;
-                }
-            }
+           if (isGroup && text.match(/https?:\/\/\S+/gi)) {
+    const metadata = await sock.groupMetadata(from);
+    const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
+    if (!isAdmin) {
+        await sock.sendMessage(from, { delete: {
+            remoteJid: from,
+            fromMe: false,
+            id: m.key.id,
+            participant: sender
+        }});
+        await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
+        return;
+    }
+}
+
 
             // Anti-stickers (>2)
-            if (type === 'sticker') {
-                const count = stickerSpamTracker[sender] || 0;
-                stickerSpamTracker[sender] = count + 1;
+if (type === 'sticker') {
+    if (!stickerSpamTracker[sender]) stickerSpamTracker[sender] = { count: 0, last: Date.now() };
+    let data = stickerSpamTracker[sender];
 
-                if (stickerSpamTracker[sender] > 2) {
-                    await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "🚫 No se pueden enviar más de 2 stickers seguidos" });
-                    stickerSpamTracker[sender] = 0;
-                }
+    if (Date.now() - data.last < 10000) {
+        data.count++;
+    } else {
+        data.count = 1;
+    }
+    data.last = Date.now();
 
-                setTimeout(() => stickerSpamTracker[sender] = 0, 10000);
-            }
+    if (data.count > 2) {
+        await sock.sendMessage(from, { delete: {
+            remoteJid: from,
+            fromMe: false,
+            id: m.key.id,
+            participant: sender
+        }});
+        await sock.sendMessage(from, { text: "🚫 No se pueden enviar más de 2 stickers seguidos" });
+        data.count = 0;
+    }
+}
+
 
             // Comandos
             if (text === '#reglas') await sock.sendMessage(from, { text: reglas });
