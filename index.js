@@ -130,24 +130,39 @@ async function startBot() {
                 const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
                 if (!isAdmin) {
                     await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
+                    await sock.sendMessage(from, { text: "⚠  Links al priv ⚠ " });
                     return;
                 }
             }
 
-            // Anti-stickers (>2)
-            if (type === 'sticker') {
-                const count = stickerSpamTracker[sender] || 0;
-                stickerSpamTracker[sender] = count + 1;
+         // Anti-stickers (>2)
+const isSticker = type === 'sticker' || (m.message.imageMessage?.mimetype === 'image/webp');
 
-                if (stickerSpamTracker[sender] > 2) {
-                    await sock.sendMessage(from, { delete: { remoteJid: from, fromMe: false, id: m.key.id, participant: sender } });
-                    await sock.sendMessage(from, { text: "🚫 No se pueden enviar más de 2 stickers seguidos" });
-                    stickerSpamTracker[sender] = 0;
-                }
+if (isSticker) {
+    stickerSpamTracker[sender] = (stickerSpamTracker[sender] || 0) + 1;
 
-                setTimeout(() => stickerSpamTracker[sender] = 0, 10000);
-            }
+    if (stickerSpamTracker[sender] > 2) {
+        try {
+            console.log(`🗑 Borrando sticker de ${sender}`);
+            await sock.sendMessage(from, { 
+                delete: { 
+                    remoteJid: from, 
+                    fromMe: false, 
+                    id: m.key.id, 
+                    participant: sender 
+                } 
+            });
+            await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
+        } catch (err) {
+            console.error("❌ Error borrando sticker:", err);
+        }
+        stickerSpamTracker[sender] = 0;
+    }
+
+    setTimeout(() => {
+        stickerSpamTracker[sender] = 0;
+    }, 30000);
+}
 
             // Comandos
             if (text === '#reglas') await sock.sendMessage(from, { text: reglas });
@@ -204,27 +219,33 @@ ${descripcion}
         }
     });
 
-    // Activar chat a 13:00 hora Lima
-    schedule.scheduleJob('0 13 * * *', async () => {
-        if (!grupoActual) return;
-        try {
-            await sock.groupSettingUpdate(grupoActual, 'not_announcement');
-            console.log('💬 Chat activado a las 13:00');
-        } catch (err) {
-            console.error('Error al activar chat:', err);
-        }
-    });
+   // Activar chat a 13:00 hora Lima
+schedule.scheduleJob('0 13 * * *', async () => {
+    if (!grupoActual) return;
+    try {
+        await sock.groupSettingUpdate(grupoActual, 'not_announcement');
+        console.log('💬 Chat activado a las 13:00 hora Lima');
+        
+        // Mensaje en el grupo
+        await sock.sendMessage(grupoActual, { text: '💬 El chat está abierto, ¡pueden hablar libremente!💬' });
+    } catch (err) {
+        console.error('Error al activar chat:', err);
+    }
+});
 
-    // Desactivar chat a 00:30 hora Lima
-    schedule.scheduleJob('30 0 * * *', async () => {
-        if (!grupoActual) return;
-        try {
-            await sock.groupSettingUpdate(grupoActual, 'announcement');
-            console.log('🔒 Chat desactivado a las 00:30');
-        } catch (err) {
-            console.error('Error al desactivar chat:', err);
-        }
-    });
+// Desactivar chat a 00:30 hora Lima
+schedule.scheduleJob('30 0 * * *', async () => {
+    if (!grupoActual) return;
+    try {
+        await sock.groupSettingUpdate(grupoActual, 'announcement');
+        console.log('🔒 Chat desactivado a las 00:30 hora Lima');
+
+        // Mensaje en el grupo
+        await sock.sendMessage(grupoActual, { text: '🔒 El chat ha sido cerrado, ahora solo administradores pueden enviar mensajes.🔒' });
+    } catch (err) {
+        console.error('Error al desactivar chat:', err);
+    }
+});
+
 }
-
 startBot();
