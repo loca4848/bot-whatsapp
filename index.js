@@ -204,7 +204,7 @@ ${descripcion}
         }
     });
 
-    // --- HORARIOS AUTOMÁTICOS ---
+    // Activar chat a 13:00 hora Lima
     schedule.scheduleJob('0 13 * * *', async () => {
         if (!grupoActual) return;
         try {
@@ -215,6 +215,7 @@ ${descripcion}
         }
     });
 
+    // Desactivar chat a 00:30 hora Lima
     schedule.scheduleJob('30 0 * * *', async () => {
         if (!grupoActual) return;
         try {
