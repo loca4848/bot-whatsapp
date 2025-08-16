@@ -159,36 +159,31 @@ async function startBot() {
             id: m.key.id,
             participant: sender
         }});
-        await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
+        await sock.sendMessage(from, { text: " ⚠️ Links al privado ⚠️ " });
         return;
     }
 }
 
 
-            // Anti-stickers (>2)
+         // Anti-stickers (>2)
 if (type === 'sticker') {
-    if (!stickerSpamTracker[sender]) stickerSpamTracker[sender] = { count: 0, last: Date.now() };
-    let data = stickerSpamTracker[sender];
+    if (!stickerSpamTracker[sender]) stickerSpamTracker[sender] = 0;
+    stickerSpamTracker[sender]++;
 
-    if (Date.now() - data.last < 10000) {
-        data.count++;
-    } else {
-        data.count = 1;
-    }
-    data.last = Date.now();
-
-    if (data.count > 2) {
+    if (stickerSpamTracker[sender] > 2) {
         await sock.sendMessage(from, { delete: {
             remoteJid: from,
             fromMe: false,
             id: m.key.id,
-            participant: sender
+            participant: m.key.participant // <- usar participant real
         }});
-        await sock.sendMessage(from, { text: "🚫 No se pueden enviar más de 2 stickers seguidos" });
-        data.count = 0;
+        await sock.sendMessage(from, { text: "🚫 Spam 🚫" });
+        stickerSpamTracker[sender] = 0;
     }
-}
 
+    // Reiniciar contador después de 10s
+    setTimeout(() => { stickerSpamTracker[sender] = 0 }, 10000);
+}
 
             // Comandos
             if (text === '#reglas') await sock.sendMessage(from, { text: reglas });
