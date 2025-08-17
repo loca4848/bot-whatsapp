@@ -1,6 +1,6 @@
-// index.js
-const antiSticker = require('./antiSticker')
-const autoChat = require('./autoChat') // ⏰ Nuevo módulo para horarios
+// index.js 
+const { autoChat } = require('./autoChat'); // ⏰ Módulo de horarios
+const { antiSticker, getStats, resetUser } = require('./antiSticker');
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const qrcodeTerminal = require('qrcode-terminal');
 const express = require('express');
@@ -13,16 +13,21 @@ const PORT = process.env.PORT || 3000;
 let qrCodeData = '';
 
 // 📜 Reglas
-const reglas = `….🎮REGLAS DEL GRUPO 🎮….
-✅ Respeto ante todo.
-✅ Sé activo y aporta.
-❓ ¿Dudas? Pregunta, aquí nos ayudamos.
-🚫 No spam ni stickers molestos.
-🚫 Links solo por privado.
+const reglas =  `
+..…🎮REGLAS DEL GRUPO 🎮….
+
+✅ Respeto ante todo.  
+✅ Sé activo y aporta. 
+❓ ¿Dudas? Pregunta, aquí nos ayudamos.  
+🚫 No spam ni stickers molestos.  
+🚫 Links solo por privado.  
 🚫 Nada de gore ni nopor.
 📸 Mandar fotos o videos para UNA VEZ.
-❌ Romper reglas = ELIMINACIÓN automática.
-🚀 Disfruta del grupo terriblee 🚀`;
+
+❌ Romper reglas = ELIMINACIÓN automáticamatica.
+
+🚀Disfruta del grupo terriblee🚀
+`;
 
 const canalYT = "https://www.youtube.com/@The.FrancoX";
 const canalID = "UCV46Pdse-OZH5WmqYHs2r-w";
@@ -85,10 +90,11 @@ async function startBot() {
         try {
             if (m.action === 'add') {
                 const user = m.participants[0];
-                const info = await sock.onWhatsApp(user);
-                const nombre = info?.[0]?.notify || user.split('@')[0];
 
-                await sock.sendMessage(m.id, { text: `Mi terriblee ${nombre}, te estábamos esperandoo.. 😈 ¡Para la locura! 😈` });
+                await sock.sendMessage(m.id, { 
+                    text: `Mi terriblee @${user.split('@')[0]}, te estábamos esperandoo.. 😈 ¡Para la locura! 😈`,
+                    mentions: [user]
+                });
                 await sock.sendMessage(m.id, { text: reglas });
             }
         } catch (e) {
@@ -110,17 +116,21 @@ async function startBot() {
 
             if (isGroup && !grupoActual) grupoActual = from;
 
-            // 🚫 Anti-sticker
-            await antiSticker(sock, m);
+            // 🚫 Anti-sticker - CORRECCIÓN AQUÍ
+            await antiSticker(sock, m); // Pasar 'm' en lugar de 'msg'
 
             // 🚫 Anti-links
             if (isGroup && text.match(/https?:\/\/\S+/gi)) {
-                const metadata = await sock.groupMetadata(from);
-                const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
-                if (!isAdmin) {
-                    await sock.sendMessage(from, { delete: m.key });
-                    await sock.sendMessage(from, { text: "⚠ Spam ⚠" });
-                    return;
+                try {
+                    const metadata = await sock.groupMetadata(from);
+                    const isAdmin = metadata.participants.find(p => p.id === sender && (p.admin === 'admin' || p.admin === 'superadmin'));
+                    if (!isAdmin) {
+                        await sock.sendMessage(from, { delete: m.key });
+                        await sock.sendMessage(from, { text: "⚠ Links no permitidos ⚠" });
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error en anti-links:', e);
                 }
             }
 
@@ -161,17 +171,41 @@ async function startBot() {
 
             // 🚨 #bam (banear usuario, solo admins)
             if (text === '#bam' && isGroup) {
-                const metadata = await sock.groupMetadata(from);
-                const isAdmin = metadata.participants.find(p => p.id === sender && p.admin);
-                if (!isAdmin) return;
+                try {
+                    const metadata = await sock.groupMetadata(from);
+                    const isAdmin = metadata.participants.find(p => p.id === sender && (p.admin === 'admin' || p.admin === 'superadmin'));
+                    if (!isAdmin) return;
 
-                if (m.message?.extendedTextMessage?.contextInfo?.participant) {
-                    const target = m.message.extendedTextMessage.contextInfo.participant;
-                    await sock.groupParticipantsUpdate(from, [target], 'remove');
-                    await sock.sendMessage(from, {
-                        text: `🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.`,
-                        mentions: [target]
-                    });
+                    if (m.message?.extendedTextMessage?.contextInfo?.participant) {
+                        const target = m.message.extendedTextMessage.contextInfo.participant;
+                        await sock.groupParticipantsUpdate(from, [target], 'remove');
+                        await sock.sendMessage(from, {
+                            text: `🚫 Usuario @${target.split('@')[0]} baneado por incumplir las reglas.`,
+                            mentions: [target]
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error en comando #bam:', e);
+                }
+            }
+
+            // 📊 #stats (estadísticas del anti-sticker, solo admins)
+            if (text === '#stats' && isGroup) {
+                try {
+                    const metadata = await sock.groupMetadata(from);
+                    const isAdmin = metadata.participants.find(p => p.id === sender && (p.admin === 'admin' || p.admin === 'superadmin'));
+                    if (!isAdmin) return;
+
+                    const stats = getStats();
+                    const mensaje = `📊 **Estadísticas Anti-Sticker**
+👥 Usuarios activos: ${stats.activeUsers}
+🎯 Total stickers procesados: ${stats.totalStickers}
+⚙️ Límite por usuario: ${stats.config.MAX_STICKERS}
+⏱️ Tiempo de reset: ${stats.config.COOLDOWN_TIME / 1000}s`;
+
+                    await sock.sendMessage(from, { text: mensaje });
+                } catch (e) {
+                    console.error('Error en comando #stats:', e);
                 }
             }
 
