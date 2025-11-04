@@ -75,13 +75,27 @@ async function startBot() {
             qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedQR}`;
             console.log(`🌐 Escanea tu QR desde aquí: ${qrCodeData}`);
         }
-        if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            const shouldReconnect = reason !== DisconnectReason.loggedOut;
-            console.log("⚠ Conexión cerrada. Reconectando...");
-            if (shouldReconnect) startBot();
+         if (connection === 'close') {
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        
+        console.log('⚠️ Conexión cerrada. Razón:', statusCode);
+        
+        if (statusCode === DisconnectReason.badSession) {
+            console.log('❌ Sesión corrupta. Borrando sesión...');
+            // Aquí podrías borrar la carpeta ./auth si quisieras
         }
-    });
+        
+        if (shouldReconnect) {
+            console.log('🔄 Reconectando en 5 segundos...');
+            setTimeout(() => startBot(), 5000); // ✅ Espera 5 segundos antes de reconectar
+        } else {
+            console.log('🛑 Sesión cerrada por el usuario. No se reconectará.');
+        }
+    } else if (connection === 'open') {
+        console.log('✅ ¡Bot conectado exitosamente!');
+    }
+});
 
     sock.ev.on('creds.update', saveCreds);
 
